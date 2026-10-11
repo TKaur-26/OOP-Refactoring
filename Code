@@ -1,0 +1,235 @@
+<?php
+
+// Parent Class
+class Person
+{
+    private string $name;
+    private int $age;
+
+    public function __construct(string $name, int $age)
+    {
+        $this->name = $name;
+        $this->age = $age;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getAge(): int
+    {
+        return $this->age;
+    }
+
+    public function display(): void
+    {
+        echo "Name: " . $this->name . PHP_EOL;
+        echo "Age: " . $this->age . PHP_EOL;
+    }
+}
+
+// Student Class inherits Person
+class Student extends Person
+{
+    private int $id;
+    private string $course;
+
+    public function __construct(
+        int $id,
+        string $name,
+        int $age,
+        string $course
+    ) {
+        parent::__construct($name, $age);
+        $this->id = $id;
+        $this->course = $course;
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getCourse(): string
+    {
+        return $this->course;
+    }
+
+    public function display(): void
+    {
+        echo "ID: " . $this->id . PHP_EOL;
+        parent::display();
+        echo "Course: " . $this->course . PHP_EOL;
+    }
+}
+
+// GraduateStudent inherits Student
+class GraduateStudent extends Student
+{
+    private string $researchTopic;
+
+    public function __construct(
+        int $id,
+        string $name,
+        int $age,
+        string $course,
+        string $researchTopic
+    ) {
+        parent::__construct($id, $name, $age, $course);
+        $this->researchTopic = $researchTopic;
+    }
+
+    public function display(): void
+    {
+        parent::display();
+        echo "Research Topic: " . $this->researchTopic . PHP_EOL;
+    }
+}
+
+// Repository Interface
+interface StudentRepositoryInterface
+{
+    public function add(Student $student): bool;
+
+    public function getAll(): array;
+
+    public function findById(int $id): ?Student;
+
+    public function deleteById(int $id): bool;
+}
+
+// Repository Implementation
+class StudentRepository implements StudentRepositoryInterface
+{
+    private array $students = [];
+
+    public function add(Student $student): bool
+    {
+        $id = $student->getId();
+
+        if (isset($this->students[$id])) {
+            return false;
+        }
+
+        $this->students[$id] = $student;
+        return true;
+    }
+
+    public function getAll(): array
+    {
+        return array_values($this->students);
+    }
+
+    public function findById(int $id): ?Student
+    {
+        return $this->students[$id] ?? null;
+    }
+
+    public function deleteById(int $id): bool
+    {
+        if (!isset($this->students[$id])) {
+            return false;
+        }
+
+        unset($this->students[$id]);
+        return true;
+    }
+}
+
+// Main CLI Application
+$repository = new StudentRepository();
+
+while (true) {
+    echo PHP_EOL;
+    echo "============================" . PHP_EOL;
+    echo "   STUDENT MANAGEMENT CLI" . PHP_EOL;
+    echo "============================" . PHP_EOL;
+    echo "1. Add Student" . PHP_EOL;
+    echo "2. View All Students" . PHP_EOL;
+    echo "3. Find Student" . PHP_EOL;
+    echo "4. Delete Student" . PHP_EOL;
+    echo "5. Exit" . PHP_EOL;
+
+    $choice = (int) readline("Enter your choice: ");
+
+    switch ($choice) {
+        case 1:
+            $id = (int) readline("Enter student ID: ");
+            $name = readline("Enter student name: ");
+            $age = (int) readline("Enter student age: ");
+            $course = readline("Enter student course: ");
+
+            echo "1. Regular Student" . PHP_EOL;
+            echo "2. Graduate Student" . PHP_EOL;
+
+            $type = (int) readline("Choose student type: ");
+
+            if ($type === 1) {
+                $student = new Student(
+                    $id, $name, $age, $course
+                );
+            } elseif ($type === 2) {
+                $topic = readline("Enter research topic: ");
+
+                $student = new GraduateStudent(
+                    $id, $name, $age, $course, $topic
+                );
+            } else {
+                echo "Invalid student type." . PHP_EOL;
+                break;
+            }
+
+            if ($repository->add($student)) {
+                echo "Student added successfully!" . PHP_EOL;
+            } else {
+                echo "Student ID already exists." . PHP_EOL;
+            }
+            break;
+
+        case 2:
+            $students = $repository->getAll();
+
+            if (empty($students)) {
+                echo "No students found." . PHP_EOL;
+                break;
+            }
+
+            echo PHP_EOL . "----- All Students -----" . PHP_EOL;
+
+            foreach ($students as $student) {
+                $student->display();
+                echo "------------------------" . PHP_EOL;
+            }
+            break;
+
+        case 3:
+            $id = (int) readline("Enter student ID to find: ");
+            $student = $repository->findById($id);
+
+            if ($student !== null) {
+                echo PHP_EOL . "----- Student Found -----" . PHP_EOL;
+                $student->display();
+            } else {
+                echo "Student not found." . PHP_EOL;
+            }
+            break;
+
+        case 4:
+            $id = (int) readline("Enter student ID to delete: ");
+
+            if ($repository->deleteById($id)) {
+                echo "Student deleted successfully!" . PHP_EOL;
+            } else {
+                echo "Student not found." . PHP_EOL;
+            }
+            break;
+
+        case 5:
+            echo "Thank you for using Student Management CLI!" . PHP_EOL;
+            exit;
+
+        default:
+            echo "Invalid choice. Please try again." . PHP_EOL;
+    }
+}
